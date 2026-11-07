@@ -15,3 +15,7 @@ upstream/
 
 # テスト依存
 node_modules/
+
+# Python キャッシュ
+__pycache__/
+*.pyc

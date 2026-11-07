@@ -23,10 +23,12 @@ require_env() {
 
 compose() {
     # VERSION.env を最後に読み込み、バージョンを両環境で統一する
-    docker compose \
+    # 公式 compose に会議URL発行画面（issuer/）を重ねる
+    MEET_ROOT="${ROOT_DIR}" docker compose \
         -p "jitsi-${ENV_NAME}" \
         --project-directory "${UPSTREAM_DIR}" \
         -f "${UPSTREAM_DIR}/docker-compose.yml" \
+        -f "${ROOT_DIR}/issuer/docker-compose.issuer.yml" \
         --env-file "${ENV_FILE}" \
         --env-file "${ROOT_DIR}/VERSION.env" \
         "$@"

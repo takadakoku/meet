@@ -1,0 +1,30 @@
+# 会議URL発行画面。公式 docker-compose.yml に重ねて読み込む（scripts/common.sh の compose()）。
+# ポートは公開しない。Jitsi web(nginx) の /host/ からのみ到達する（branding/web/nginx/custom-meet.conf）。
+services:
+    issuer:
+        build: ${MEET_ROOT}/issuer
+        image: oriental-meet-issuer:1.0.0
+        restart: ${RESTART_POLICY:-unless-stopped}
+        read_only: true
+        tmpfs:
+            - /tmp:size=16M,mode=1777,noexec
+        cap_drop:
+            - ALL
+        security_opt:
+            - no-new-privileges:true
+        environment:
+            - JWT_APP_ID
+            - JWT_APP_SECRET
+            - PUBLIC_URL
+            - XMPP_DOMAIN
+            - ISSUER_SESSION_SECRET
+            - TZ
+        volumes:
+            - ${CONFIG}/issuer:/data:ro
+        networks:
+            meet.jitsi:
+        healthcheck:
+            test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/host/healthz', timeout=3)"]
+            interval: 30s
+            timeout: 5s
+            retries: 3

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+  <h1>新しい会議を作成</h1>
+  <p class="lead">ボタンを押すと、新しい会議室のURLを2つ発行します。発行した内容はどこにも保存されません。</p>
+  <form method="post" action="{{ prefix }}/create" class="stack">
+    <input type="hidden" name="csrf" value="{{ csrf }}">
+    <label for="hours">主催者用URLの有効期限</label>
+    <select id="hours" name="hours">
+      {% for h, label in hour_choices %}
+      <option value="{{ h }}"{% if h == default_hours %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <p class="hint">期限を過ぎると主催者用URLでは入室できなくなります。会議の開始時刻に間に合う長さを選んでください。</p>
+    <button type="submit" class="btn-primary">会議URLを発行する</button>
+  </form>
+</section>
+{% endblock %}

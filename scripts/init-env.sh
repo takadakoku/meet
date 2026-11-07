@@ -21,6 +21,10 @@ else
                JIGASI_TRANSCRIBER_PASSWORD JIBRI_RECORDER_PASSWORD JIBRI_XMPP_PASSWORD; do
         sed -i "s#^${key}=.*#${key}=$(openssl rand -hex 16)#" "${ENV_FILE}"
     done
+    # JWT 署名鍵（HS256 用に 256bit）。値は表示しない。
+    sed -i "s#^JWT_APP_SECRET=.*#JWT_APP_SECRET=$(openssl rand -hex 32)#" "${ENV_FILE}"
+    # 会議URL発行画面のセッション署名鍵
+    sed -i "s#^ISSUER_SESSION_SECRET=.*#ISSUER_SESSION_SECRET=$(openssl rand -hex 32)#" "${ENV_FILE}"
     chmod 600 "${ENV_FILE}"
     echo "生成しました: ${ENV_FILE}（パーミッション 600）"
 fi
@@ -30,10 +34,10 @@ CONFIG="${CONFIG/#\~/$HOME}"
 [[ -n "${CONFIG}" ]] || { echo "ERROR: CONFIG が未設定です" >&2; exit 1; }
 
 # Handbook (stable-11146 以降) のディレクトリ構成。jigasi/jibri/transcriber は使わないため作成しない。
-mkdir -p "${CONFIG}"/{web,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb}
+mkdir -p "${CONFIG}"/{web,issuer,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb}
 mkdir -p "${CONFIG}"/storage/{prosody,transcripts,web}
 mkdir -p "${CONFIG}"/tmp/{web-crontabs,web-load-test}
-chmod 700 "${CONFIG}"
+chmod 700 "${CONFIG}" "${CONFIG}/issuer"
 if [[ "$(id -u)" == "1000" ]]; then
     # コンテナ実行ユーザー(uid 1000)と所有者が一致するため 777 は不要
     chmod 750 "${CONFIG}"/storage/* "${CONFIG}"/tmp/*

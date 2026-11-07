@@ -9,4 +9,9 @@
     max-width: 190px;
     max-height: 62px;
   }
+
+  /* ゲスト待機画面の「Log-in / I am the host」ボタン（ユーザー名・パスワード入力）を隠す。
+     本構成は JWT 専用でパスワードアカウントが存在せず、押しても必ず失敗して顧客が混乱するため。
+     このボタンは JWT を持たない利用者にだけ表示される（主催者には影響しない）。 */
+  [data-testid="lobby.loginButton"] { display: none !important; }
 </style>

@@ -1,10 +1,12 @@
 // 2つの独立したブラウザセッションで会議参加・音声/映像・チャット・画面共有を検証する
 const puppeteer = require('puppeteer-core');
-const crypto = require('crypto');
 
 const BASE = process.env.BASE || 'https://localhost:8443';
 const P2P = process.env.P2P === '1';
-const room = 'e2e' + crypto.randomBytes(12).toString('hex');
+// Phase 5 以降は認証必須: 1人目（Alice）は主催者URL（JWT）、2人目（Bob）はゲストURLで参加する
+const issued = require('child_process').execFileSync(require('path').resolve(__dirname, '../../scripts/issue-meeting.sh'), ['local', '--hours', '1'], { encoding: 'utf8' });
+const room = issued.match(/会議室名\s*:\s*(\S+)/)[1];
+const hostHash = issued.match(/#(jwt=\S+)$/m)[1];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function launch(name) {
@@ -25,6 +27,7 @@ async function launch(name) {
   page.on('console', m => { if (m.type() === 'error' && /share|desktop|screen|display/i.test(m.text())) console.log(`[${name}] console:`, m.text().slice(0, 300)); });
   page.on('pageerror', e => console.log(`[${name}] pageerror:`, e.message));
   const hash = [
+    ...(name === 'Alice' ? [hostHash] : []),
     `config.p2p.enabled=${P2P}`,
     `userInfo.displayName="${name}"`,
   ].join('&');

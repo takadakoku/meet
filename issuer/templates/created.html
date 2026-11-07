@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}発行しました{% endblock %}
+{% block content %}
+<section class="card">
+  <h1>会議URLを発行しました</h1>
+  <p class="lead">この画面を閉じるとURLは再表示できません。必要なURLを先にコピーしてください。</p>
+
+  <div class="url-block guest">
+    <h2>ゲスト用URL <span class="tag">お客様に送る</span></h2>
+    <div class="url-row">
+      <input id="guest-url" class="url" value="{{ guest_url }}" readonly>
+      <button type="button" class="btn-copy" data-copy="guest-url">コピー</button>
+    </div>
+    <p class="hint">お客様はログイン不要です。主催者が入室すると会議に参加できます。</p>
+  </div>
+
+  <div class="url-block host">
+    <h2>主催者用URL <span class="tag warn">本人のみ</span></h2>
+    <a class="btn-primary" href="{{ host_url }}" target="_blank" rel="noopener noreferrer">主催者として会議を開く</a>
+    <details>
+      <summary>別の端末で開くために主催者用URLをコピーする</summary>
+      <div class="url-row">
+        <input id="host-url" class="url" value="{{ host_url }}" readonly>
+        <button type="button" class="btn-copy" data-copy="host-url">コピー</button>
+      </div>
+    </details>
+    <p class="hint warn-text">主催者用URLを知っている人は誰でも主催者（モデレーター）になれます。お客様・チャット・メールには絶対に貼らないでください。有効期限: {{ expires }}（日本時間）</p>
+  </div>
+
+  <a class="btn-text" href="{{ prefix }}/">別の会議を作成する</a>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ prefix }}/static/copy.js"></script>{% endblock %}

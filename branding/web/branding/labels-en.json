@@ -1,1 +1,5 @@
-{ "welcomepage": { "headerTitle": "東アジア通信システム Web会議" } }
+{
+  "welcomepage": { "headerTitle": "東アジア通信システム Web会議" },
+  "lobby": { "waitForModerator": "The host has not joined yet. You will enter the meeting automatically when the host arrives. Please wait." },
+  "dialog": { "WaitForHostNoAuthMsg": "The host has not joined yet. You will enter the meeting automatically when the host arrives. Please wait." }
+}

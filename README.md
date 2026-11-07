@@ -4,7 +4,7 @@ Jitsi Meet 公式 Docker 構成（[jitsi/docker-jitsi-meet](https://github.com/j
 無改変で利用し、`.env` だけで local / production を切り替える構成です。
 要件は `SPEC.md`、作業ルールは `CLAUDE.md` を参照してください。
 
-> **現状: Phase 1（ローカル構築・基本会議テスト）完了。** 認証は未設定のため、ローカル専用（127.0.0.1）でのみ動かしています。
+> **現状: Phase 5（JWT・ゲスト・ロビー）と会議URL発行ページまでローカルで完了。** 本番は未構築。本番作業の引き継ぎは `HANDOFF.md` を参照。
 
 ## 採用バージョン
 
@@ -33,7 +33,8 @@ meet/
 │   ├── .env.example         # 本番用テンプレート（構成のみ・ダミー）
 │   └── README.md
 ├── branding/                # ロゴ・名称のカスタムファイル置き場（現在は空＝Jitsi標準）
-├── scripts/                 # 取得・初期化・起動・停止等
+├── issuer/                  # 主催者用 会議URL発行ページ（/host/）
+├── scripts/                 # 取得・初期化・起動・停止・会議URL発行・主催者アカウント管理
 └── tests/e2e/               # 2セッション自動会議テスト
 ```
 
@@ -93,7 +94,7 @@ scripts/up.sh local
 | `TZ` | `Asia/Tokyo` | |
 | `JICOFO_MAX_MEMORY` / `VIDEOBRIDGE_MAX_MEMORY` | `512m` / `1024m` | 開発PCのメモリ節約 |
 | `DISABLE_DEEP_LINKING` | `true` | スマホで Jitsi 公式アプリへ誘導しない（ブラウザで参加） |
-| 認証 | 無効 | Phase 3 で JWT を検証予定 |
+| 認証 | JWT（下記「認証・会議URL」） | 主催者だけが会議を開始できる |
 
 UDP 10000（JVB メディア）は公式 compose の仕様上 0.0.0.0 で待ち受けますが、
 シグナリング（8443）が 127.0.0.1 限定のため外部から会議には参加できません。
@@ -101,8 +102,64 @@ UDP 10000（JVB メディア）は公式 compose の仕様上 0.0.0.0 で待ち�
 ### LAN 内の別端末（スマートフォン等）から試す場合
 
 `HTTPS_PORT=8443`、`PUBLIC_URL=https://<PCのLAN IP>:8443`、`JVB_ADVERTISE_IPS=<PCのLAN IP>` に変更して
-`scripts/down.sh local && scripts/up.sh local`。**認証なしの会議室が LAN に公開される**ため、実施前に判断してください。
+`scripts/down.sh local && scripts/up.sh local`。会議画面が LAN に公開されるため、実施前に判断してください（会議の開始には主催者URLが必要）。
 UFW の変更は不要ですが（Docker が直接 iptables を設定するため）、それ自体が「UFW で塞いでも公開される」点に注意。
+
+## 認証・会議URL（Phase 5）
+
+Handbook「Authentication (Token)」の推奨構成（JWT + 主催者待ち）を、公式 Docker の環境変数だけで設定しています。
+旧 Secure Domain 方式（Jicofo 認証）は Handbook で非推奨のため使っていません。
+
+| 利用者 | 入り方 | 権限 |
+|---|---|---|
+| 主催者 | 主催者用URL（JWT 付き） | 会議を開始できる。モデレーター（ロビー・ミュート・退出させる等） |
+| 顧客（ゲスト） | ゲスト用URL（ログイン不要） | 主催者が来るまで待機画面。主催者が入ると自動で入室。モデレーターにはならない |
+
+### 会議URLの発行（主催者用ページ）
+
+主催者は **`<PUBLIC_URL>/host/`**（ローカル: https://localhost:8443/host/ ）に ID・パスワードでログインし、
+「会議URLを発行する」を押すと、ゲスト用URLと主催者用URLが表示されます。
+
+- 会議室名は英小文字+数字 20 文字のランダム値。会議室名・URL・発行履歴は保存しません（予約機能ではありません）。
+- **顧客にはゲスト用URLだけを送ってください。** 主催者用URLを渡すと、その人もモデレーターになります。
+- 主催者用URLのトークンは `#` 以降に付くため、ページを開くときにはサーバーへ送られません。
+- 主催者用URLの有効期限は 3時間 / 24時間 / 3日 / 7日 から選択。トークンはその会議室専用です。
+
+主催者アカウントの管理（保存先: `${CONFIG}/issuer/users.json`、scrypt ハッシュ、Webルート外）:
+
+```bash
+scripts/host-user.sh local add takada --name "高田"   # パスワード（12文字以上）を2回入力
+scripts/host-user.sh local passwd takada               # 変更するとログイン中のセッションも無効
+scripts/host-user.sh local del takada
+scripts/host-user.sh local list
+```
+
+| 発行ページの仕様 | 内容 |
+|---|---|
+| 構成 | `issuer/`（Flask + gunicorn、バージョン固定）。公式 compose に `issuer/docker-compose.issuer.yml` を重ねて起動。ポート非公開で、Jitsi の nginx が `/host/` だけ中継 |
+| ログイン保護 | 同一IDで5回失敗→15分ロック、同一IPで20回失敗→15分ロック。CSRF トークン、Cookie は Secure・HttpOnly・SameSite=Strict、8時間で失効 |
+| 秘密情報 | JWT 署名鍵・セッション鍵は `.env` から環境変数で渡すだけ。ブラウザへは主催者用URLのみ |
+| ログ | ログイン成功/失敗/ロック（ID と接続元IP）と「発行した」事実のみ。会議室名・URLは記録しない |
+
+コマンドでも発行できます（管理者用・テスト用）: `scripts/issue-meeting.sh local [--hours N] [--name 表示名]`
+
+| 設定（`.env`） | 値 | 意味 |
+|---|---|---|
+| `ENABLE_AUTH` / `AUTH_TYPE` | `1` / `jwt` | JWT 認証 |
+| `JWT_APP_ID` / `JWT_APP_SECRET` | `oriental-meet` / 自動生成 | 署名鍵は `init-env.sh` が生成。表示・共有しない |
+| `ENABLE_GUESTS` | `1` | トークンなしでもゲストとして接続可 |
+| `JICOFO_ENABLE_AUTH` | `0` | Handbook: トークン認証では Jicofo 認証を無効にする |
+| `ENABLE_AUTO_OWNER` | `0` | 主催者不在時にゲストをモデレーターへ自動昇格させない |
+| `XMPP_MODULES` / `XMPP_MUC_MODULES` | `persistent_lobby` / `muc_wait_for_host` | ゲストを主催者到着まで待機させる |
+| `ENABLE_LOBBY` | `1` | 主催者がロビー（入室承認制）を会議中にオン/オフできる |
+
+> **ロビーの運用（2026-11-07 決定）:** SPEC 4.4 は「本番でロビーを有効にする」としていますが、ユーザー判断により
+> **全会議での自動適用はせず、主催者が必要なときにオンにする運用**とします。理由: 会議室名が会議ごとのランダム値（約103bit）で推測不能なこと、
+> 主催者が参加者一覧で確認し、不審な参加者を退出させたりロビーをオンにしたりできること。
+> 残るリスクはゲスト用URLの転送・漏えいで、その会議に限り主催者在室中は入室できる点です。
+
+ゲスト待機画面の「Log-in」ボタン（パスワード入力。本構成では使えない）は非表示にし、
+待機メッセージを「主催者が参加すると自動的に会議に入ります」に変更しています（`branding/`）。
 
 ## 動作確認（自動テスト）
 
@@ -113,7 +170,11 @@ cd tests/e2e
 npm install          # puppeteer-core のみ（ブラウザはシステムの google-chrome を使用）
 npm run test:jvb     # JVB（サーバー中継）経由
 npm run test:p2p     # 2人時の既定動作（P2P）
+node auth-test.js    # 認証: 主催者/ゲスト権限・主催者待ち・ロビー・不正トークン拒否
+node issuer-test.js  # 発行ページ: ログイン・発行・入室・ロック・CSRF・セッション無効化（テスト用アカウントは自動削除）
 ```
+
+`test.js` は1人目を主催者URL、2人目をゲストURLで参加させます（`scripts/issue-meeting.sh` を使用）。
 
 注: テストでは会議室名にランダム値を使用します。URLで `prejoinConfig.enabled=false` にすると
 Jitsi の仕様でメディア無しで参加するため、テストはプリジョイン画面の「参加」ボタンを押す方式にしています。
@@ -144,4 +205,6 @@ Jitsi の仕様でメディア無しで参加するため、テストはプリ�
 - Prosody の `mod_http ... Not listening on any ports, 'health' will be unreachable` は起動時に出力されますが、会議動作（BOSH/WebSocket）に影響はありません。
 - Jicofo の REST（:8888 `/about/health`）は既定で無効のため応答しません。
 - 通常の通話は DTLS-SRTP で暗号化されますが、JVB 経由の会議は E2EE ではありません（SPEC 9.2）。
+- `XMPP_MODULES` は公式テンプレートの仕様でゲスト用ドメインにも読み込まれるため、`persistent_lobby` が2回ロードされます。処理は冪等で、`tests/e2e/auth-test.js` で動作を確認済みです。
+- **トークンがログに残る場合があります（未解決）。** nginx の error ログ（WebSocket 切断時のリクエスト行）と Prosody の error ログ（拒否されたトークン）に、公式イメージの標準動作として JWT が出力されます。署名鍵は出力されません。access ログは公式設定でマスク済みです。
 # meet

@@ -23,11 +23,11 @@ Handbook「Jitsi Meet configuration」節。生成済みの `config.js` / `inter
 |---|---|---|
 | `web/branding/logo.png` | 元素材そのまま | （予備。ロゴマーク単体） |
 | `web/branding/logo-with-name.png` | 元素材（余白除去）の下に白文字「Oriental Network Co., Ltd.」（Noto Sans SemiBold）を配置、379×124（2倍解像度） | 会議画面左上（`DEFAULT_LOGO_URL`・dynamic branding `logoImageUrl`）、ウェルカム画面（`DEFAULT_WELCOME_PAGE_LOGO_URL`） |
-| `web/branding/plugin.head.html` | 公式の空フックを差し替え | 左上ロゴ枠を 71×32 → 190×62 に拡大する CSS のみ |
+| `web/branding/plugin.head.html` | 公式の空フックを差し替え | 左上ロゴ枠を 71×32 → 190×62 に拡大、ゲスト待機画面の「Log-in」ボタンを非表示（CSS のみ） |
 | `web/branding/favicon.png` | 128×128 透過に縮小・中央配置 | ファビコン（`/images/favicon.svg` を nginx で差し替え。title.html が固定参照のため） |
 | `web/branding/apple-touch-icon.png` | 180×180 白背景に中央配置 | iOS ホーム画面アイコン |
 | `web/branding/title.html` | 公式 title.html を複製し名称・画像のみ変更 | 初期タブ名・OGP。ファビコンを `branding/favicon.png?v=2` に変更（旧URLは1年キャッシュのため） |
-| `web/branding/dynamic-branding.json` + `labels-*.json` | — | 公式 dynamic branding（`config.dynamicBrandingUrl`）でウェルカム画面見出しを上書き |
+| `web/branding/dynamic-branding.json` + `labels-*.json` | — | 公式 dynamic branding（`config.dynamicBrandingUrl`）でウェルカム画面見出し・ゲスト待機メッセージを上書き |
 
 表示名 `東アジア通信システム Web会議` は `interfaceConfig.APP_NAME`（タブ名）と上記 labels（見出し）で設定。
 ウェルカム画面下部の Jitsi 公式アプリ案内は `interfaceConfig.DISPLAY_WELCOME_FOOTER = false`、

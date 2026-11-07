@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>{% block title %}会議URLの発行{% endblock %} | 東アジア通信システム Web会議</title>
+<link rel="icon" type="image/png" href="{{ prefix }}/static/logo.png">
+<link rel="stylesheet" href="{{ prefix }}/static/style.css">
+</head>
+<body>
+<header class="bar">
+  <div class="bar-inner">
+    <img src="{{ prefix }}/static/logo.png" alt="" class="mark" width="40" height="27">
+    <div class="brand">
+      <span class="brand-name">東アジア通信システム Web会議</span>
+      <span class="brand-sub">主催者用 会議URL発行</span>
+    </div>
+    {% if user %}
+    <form method="post" action="{{ prefix }}/logout" class="logout">
+      <input type="hidden" name="csrf" value="{{ csrf }}">
+      <span class="who">{{ user.name }}（{{ user.id }}）</span>
+      <button type="submit" class="btn-text">ログアウト</button>
+    </form>
+    {% endif %}
+  </div>
+</header>
+<main class="wrap">
+{% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

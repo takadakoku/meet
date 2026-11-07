@@ -7,5 +7,5 @@ if [[ "${ENV_NAME}" == "production" && "${ALLOW_PRODUCTION:-0}" != "1" ]]; then
 fi
 "${ROOT_DIR}/scripts/apply-branding.sh" "${ENV_NAME}"
 echo "Jitsi ${JITSI_IMAGE_VERSION} を起動します (${ENV_NAME})"
-compose up -d
+compose up -d --build
 compose ps
