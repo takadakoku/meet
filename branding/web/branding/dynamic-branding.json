@@ -1,0 +1,8 @@
+{
+  "logoImageUrl": "branding/logo-with-name.png",
+  "logoClickUrl": "https://oriental-network.com/",
+  "labels": {
+    "ja": "branding/labels-ja.json",
+    "en": "branding/labels-en.json"
+  }
+}

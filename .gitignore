@@ -1,0 +1,17 @@
+# 秘密情報（実値）
+.env
+*.env.bak
+local/.env
+production/.env
+!*.env.example
+
+# 公式リリース（scripts/fetch-upstream.sh で再取得）
+upstream/
+
+# 鍵・証明書
+*.pem
+*.key
+*.crt
+
+# テスト依存
+node_modules/

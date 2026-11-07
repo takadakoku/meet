@@ -1,0 +1,7 @@
+{
+  "name": "jitsi-local-e2e",
+  "private": true,
+  "description": "ローカルJitsiの2セッション会議テスト（疑似カメラ/マイク）",
+  "scripts": { "test": "node test.js", "test:jvb": "P2P=0 node test.js", "test:p2p": "P2P=1 node test.js" },
+  "dependencies": { "puppeteer-core": "23.11.1" }
+}
